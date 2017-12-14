@@ -1,0 +1,14 @@
+nimcache/
+bin/
+
+# modpack files
+*.yml
+*.yaml
+
+# setting files
+settings.json
+
+modpacks/
+downloads/
+.vscode/
+fmm.zip
