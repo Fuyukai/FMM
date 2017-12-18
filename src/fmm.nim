@@ -11,11 +11,6 @@ const
   USER_AGENT = "FactorioModpackManager 0.1.0/Nim " & NimVersion
 
 let client: HttpClient = USER_AGENT.newHttpClient()
-#let headers = newHttpHeaders()
-# prevent chunked transfer encoding from happening
-#headers["Transfer-Encoding"] = "junk"
-#client.headers = headers
-
 ## Note: login flow for downloading mods
 ## 1) POST https://auth.factorio.com/api-login?api_version=2 with username, password, steamid, and require_game_ownership=true
 ## 2) GET https://mods.factorio.com/api/downloads/data/mods/.../...?username=username&token=token where token is retrieved above
@@ -62,7 +57,7 @@ setDefaultValue(ModpackMeta, url, nil)
 setDefaultValue(ModpackMeta, update_url, nil)
 setDefaultValue(ModpackFactorio, server, nil)
 
-# Utility functions
+# Utility functions and templates
 
 ## Gets the Factorio directory.
 template getFactorioDir(): string =
@@ -258,16 +253,28 @@ proc doInstall(modpackName: string): bool =
       # special handling in case version is nil
       # in which case, we try and download the latest version
       if fMod.version.isNil:
-        if release["version"].getStr() > currentVersion:
-          selectedRelease = release
-          currentVersion = release["version"].getStr()
+          if release["version"].getStr() > currentVersion:
+
+            # ensure we don't accidentally select the wrong release
+            if not modpack.factorio.version.isNil:
+              if modpack.factorio.version != release["factorio_version"].getStr():
+                continue
+
+            selectedRelease = release
+            currentVersion = release["version"].getStr()
       else:
         if release["version"].getStr() == fMod.version:
           selectedRelease = release
           break
       
     if selectedRelease.isNil:
-      echoErr "Could not find a matching release for ", fmod.name, " version ", fmod.version
+      var version: string
+      if fmod.version.isNil:
+        version = "(no version)"
+      else:
+        version = fmod.version
+
+      echoErr "Could not find a matching release for ", fmod.name, " version ", version, " for this Factorio version"
       return false
 
     let facVer = selectedRelease["factorio_version"].getStr()
