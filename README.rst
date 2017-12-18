@@ -29,12 +29,8 @@ Usage
 FMM requires that Factorio is launched at least once. This is so that it can scan your
 factorio data directory to find where you installed it.
 
-Before using FMM, you must login to the mod portal, this is so that FMM can download 
-mdos automatically.
-
-.. code-block:: bash
-
-    $ ./bin/fmm login
+Additionally, you must have logged into the mod portal inside Factorio at least once, 
+in order to get a mod portal token to use to download mods.
 
 To install a modpack, you can use ``fmm install modpack.yaml`` to install from a local
 file, or ``fmm install https://website.com/link.yaml`` to install from a URL.
@@ -52,6 +48,15 @@ You can launch a modpack with the usage of ``fmm launch``:
 
 This will automatically locate your Factorio executable and run it with the correct mod
 directory. If a server is provided in the file, it will connect automatically.
+
+FAQ
+---
+
+**Q:** I get a ``ProtocolError`` when downloading, what do I do?  
+**A:** Just re-run the command. This means the mod portal server kicked you off.
+
+**Q:** How do I uninstall a modpack?
+**A:** Delete it's directory in ``modpacks``.
 
 Writing Modpack YAMLs
 ---------------------

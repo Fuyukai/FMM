@@ -143,65 +143,16 @@ proc loadModpackFromYAML(name: string): Modpack =
   var modpack = Modpack()
   load(modpackYAML, modpack)
 
-  # always lowercase the name
+  # always normalize the name
   modpack.meta.name = modpack.meta.name.toLowerAscii().replace(" ", "_")
 
   return modpack
 
 # Commands logic
 
-## Does the login process
-proc doLogin(): bool =
-  output "Starting auth.factorio.com login flow."
-  let hasToken = readLineFromStdin "[!] Do you have a login token? [y/N] " 
-
-  # stored in the login details file
-  var
-    token: string
-    username: string
-
-  if hasToken == "y":
-    token = readPasswordFromStdin "[!] Enter your login token: "
-    username = readLineFromStdin "[!] Enter your Factorio username: "
-  else:
-    username = readLineFromStdin "[!] Enter your Factorio username: "
-    let password = readPasswordFromStdin "[!] Enter your Factorio password: "
-    let steamid = readLineFromStdin "[!] Enter your Factorio steamID (enter nothing if you don't have one): "
-    # make the request
-    var body = "require_game_ownership=true&username=" & username & "&password=" & encodeUrl(password)
-    if steamid != "":
-      body = body & "&steam_id=" & steamid
-
-    let tmpClient = newHttpClient()
-    let headers = newHttpHeaders()
-    headers["Content-Type"] = "application/x-www-form-urlencoded"
-    tmpClient.headers = headers
-    let response = tmpClient.post(url="https://auth.factorio.com/api-login?api_version=2", body=body)
-    if not response.code().is2xx:
-      echoErr "Failed to login to Factorio."
-      echoErr response.body()
-      return false
-
-    let res = response.body().parseJson()
-    token = res["token"].getStr()
-    username = res["username"].getStr()
-  
-  let output = $(%*{"token": token, "username": username})
-  let fl = open("settings.json", fmWrite)
-  fl.write(output)
-  fl.close()
-  output "Logged in as ", username
-  return true
-
 ## Does a modpack installation.
 proc doInstall(modpackName: string): bool =
-  if not "settings.json".existsFile():
-    output "No login token detected, starting login process..."
-    if not doLogin():
-      echoErr "Login failed; cannot do installation."
-      return
-
-  var settings = openJson("settings.json")
+  let settings = openJson(getFactorioDir() & "/player-data.json")
 
   if modpackName.len <= 0:
     output "Must pass a modpack URL or file path."
@@ -291,8 +242,8 @@ proc doInstall(modpackName: string): bool =
       output "Skipping downloading mod " & filename & ", mod already downloaded"
     else:
       # copy data onto the download url
-      downloadUrl = downloadUrl & "?username=" & settings["username"].getStr().encodeUrl()
-      downloadUrl = downloadUrl & "&token=" & settings["token"].getStr().encodeUrl()
+      downloadUrl = downloadUrl & "?username=" & settings["service-username"].getStr().encodeUrl()
+      downloadUrl = downloadUrl & "&token=" & settings["service-token"].getStr().encodeUrl()
 
       output "Downloading ", downloadUrl, " to '", filepath, "'"
       client.downloadFile(downloadUrl, filepath)
@@ -353,7 +304,6 @@ const helpText = """
 Usage: fmm [command] <options>
 
 Commands:
-  login         Logins into the mod portal. Required to download mods.
   install       Installs a modpack.
   launch        Launches a modpack.
   """
@@ -361,8 +311,6 @@ Commands:
 commandline:
   subcommand install, "install", "i":
     argument iModpack, string
-
-  subcommand login, "login", "l": discard
 
   subcommand launch, "launch", "la":
     argument lModpack, string
@@ -372,8 +320,6 @@ commandline:
 
 if install:
   discard doInstall(iModpack)
-elif login:
-  discard doLogin()
 elif launch:
   doLaunch(lModpack)
 else:
