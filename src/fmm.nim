@@ -60,6 +60,7 @@ setDefaultValue(ModpackMod, version, nil)
 setDefaultValue(ModPackMeta, version, nil)
 setDefaultValue(ModpackMeta, url, nil)
 setDefaultValue(ModpackMeta, update_url, nil)
+setDefaultValue(ModpackFactorio, server, nil)
 
 # Utility functions
 
@@ -79,8 +80,6 @@ template getFactorioDir(): string =
     $os.getAppDir()
 
 # utility methods
-template getModsDir(): string = getFactorioDir() & "mods"
-
 template echoErr(args: varargs[string, `$`]) =
   stderr.writeLine "[!] Error: " & args.join("")
 
@@ -327,7 +326,13 @@ proc doLaunch(modpackName: string) =
 
   # build the command line
   let executable = getFactorioBinary()
-  let commandLine = @[executable, "--mod-directory", fullName].join(" ")
+  var commandLineArgs = @[executable, "--mod-directory", fullName]
+  if not modpack.factorio.server.isNil:
+    commandLineArgs.add("--mp-connect")
+    commandLineArgs.add(modpack.factorio.server)
+
+  let commandLine = commandLineArgs.join(" ")
+
   output "Launching Factorio... (" & commandLine & ")"
   let errorCode = execCmd(commandLine)
 
