@@ -1,5 +1,5 @@
 ## The FMM utility.
-import os, strutils, json, httpclient, streams, tables, cgi, rdstdin
+import os, osproc, strutils, json, httpclient, streams, tables, cgi, rdstdin
 import commandeer
 import yaml
 import progress
@@ -66,25 +66,40 @@ setDefaultValue(ModpackMeta, update_url, nil)
 ## Gets the Factorio directory.
 template getFactorioDir(): string =
   when system.hostOS == "windows":
-    return $getEnv("APPDATA") & "/Factorio"
+    $getEnv("APPDATA") & "/Factorio"
 
   elif system.hostOS == "linux":
-    return $getEnv("HOME") & "/factorio"
+    $getEnv("HOME") & "/.factorio"
 
   elif system.hostOS == "macosx":
-    return $getEnv("HOME") & "~/Library/Application Support/factorio"
+    $getEnv("HOME") & "~/Library/Application Support/factorio"
 
   else:
     # panic
-    return $os.getAppDir()
+    $os.getAppDir()
 
+# utility methods
 template getModsDir(): string = getFactorioDir() & "mods"
 
 template echoErr(args: varargs[string, `$`]) =
-  stderr.writeLine("[!] Error: " & args.join(""))
+  stderr.writeLine "[!] Error: " & args.join("")
 
 template output(args: varargs[string, `$`]) =
-  echo "[!] ", args.join("")
+  stdout.writeLine "[!] " & args.join("")
+
+# Gets the factorio binary.
+proc getFactorioBinary(): string =
+  let fName = getFactorioDir() & "/factorio-current.log"
+  let stream = newFileStream(fName, fmRead)
+  let lines = stream.readAll().split("\n")
+
+  if lines.len < 5:
+    echoErr "Log file is incomplete!"
+    return nil
+
+  # example of line 2: 0.037 Program arguments: "/media/storage/eyes/.local/share/Steam/steamapps/common/Factorio/bin/x64/factorio" 
+  return lines[2].split(":")[1].substr(1).split(" ")[0]
+
 
 ## Initializes FMM, creating directories and data files.
 proc initFmm() =
@@ -98,10 +113,10 @@ proc initFmm() =
 ## Downloads from an address.
 proc downloadData(address: string): string =
   output "Downloading ", address
-  var response = client.get(address)
+  let response = client.get(address)
   let body = response.body()
   output "Downloaded ", $body.len, " bytes"
-  return response.body()
+  return body
   
 ## Downloads a JSON document.
 proc downloadJSON(address: string): JsonNode =
@@ -109,6 +124,9 @@ proc downloadJSON(address: string): JsonNode =
 
 ## Opens from a location.
 proc openData(location: string): string =
+  if not location.existsFile:
+    raise newException(IOError, "File not found")
+
   var stream = newFileStream(location, fmRead)
   result = stream.readAll()
   stream.close()
@@ -118,6 +136,23 @@ proc openJson(location: string): JsonNode =
   var s = location.newFileStream(fmRead)
   result = parseJson(s, location)
   s.close()
+
+
+## Gets the modpack object from the modpack's YAML.
+proc loadModpackFromYAML(name: string): Modpack =
+  var modpackYAML: string
+  if name.startsWith("http://") or name.startsWith("https://"):
+    modpackYAML = downloadData(name)
+  else:
+    modpackYAML = openData(name)
+
+  var modpack = Modpack()
+  load(modpackYAML, modpack)
+
+  # always lowercase the name
+  modpack.meta.name = modpack.meta.name.toLowerAscii().replace(" ", "_")
+
+  return modpack
 
 # Commands logic
 
@@ -165,7 +200,7 @@ proc doLogin(): bool =
   return true
 
 ## Does a modpack installation.
-proc doInstall(modpack: string) =
+proc doInstall(modpackName: string): bool =
   if not "settings.json".existsFile():
     output "No login token detected, starting login process..."
     if not doLogin():
@@ -174,28 +209,25 @@ proc doInstall(modpack: string) =
 
   var settings = openJson("settings.json")
 
-  if modpack.len <= 0:
+  if modpackName.len <= 0:
     output "Must pass a modpack URL or file path."
-    return
+    return false
   
-  output "Installing modpack from " & modpack & "..."
-  # ok, first check if it's a url
-  # if it is, we need to download the modpack.json
-  var modpackYAML: string
-  if modpack.startsWith("http://") or modpack.startsWith("https://"):
-    modpackYAML = downloadData(modpack)
-  else:
-    modpackYAML = openData(modpack)
+  output "Installing modpack from " & modpackName & "..."
 
-  var modpack = Modpack()
+  # load it from YAML
+  var modpack: Modpack
   try:
-    load(modpackYAML, modpack)
+    modpack = loadModpackFromYAML(modpackName)
   except YamlConstructionError:
     echoErr "Invalid YAML provided. Is this definitely a modpack?"
-    return
+    return false
+  except IOError:
+    echoErr "Failed reading from file. Does it exist?"
+    return false
 
   output "Installing '", modpack.meta.name, "' by '", modpack.meta.author, "'"
-  let modpackDir = "modpacks/" & modpack.meta.name.normalize()
+  let modpackDir = "modpacks/" & modpack.meta.name.toLowerAscii()
 
   if modpackDir.existsDir():
     modpackDir.removeDir()
@@ -217,7 +249,7 @@ proc doInstall(modpack: string) =
 
     if modData.hasKey("detail") and modData["detail"].getStr() == "Not found.":
       echoErr "Mod '", fMod.name, "' not found"
-      return
+      return false
 
     var selectedRelease: JsonNode
     var currentVersion: string = ""
@@ -237,12 +269,12 @@ proc doInstall(modpack: string) =
       
     if selectedRelease.isNil:
       echoErr "Could not find a matching release for ", fmod.name, " version ", fmod.version
-      return
+      return false
 
     let facVer = selectedRelease["factorio_version"].getStr()
     if facVer != modpack.factorio.version:
       echoErr "This mod is for ", facVer, ", not ", modpack.factorio.version
-      return
+      return false
 
     # time to do the download
     # define some variables 
@@ -271,7 +303,36 @@ proc doInstall(modpack: string) =
     output "Installed mod " & fMod.name
 
   output "Installed modpack!"
+  return true
     
+## Launches factorio with the specified modpack.
+proc doLaunch(modpackName: string) =
+  # load it from YAML
+  var modpack: Modpack
+  try:
+    modpack = loadModpackFromYAML(modpackName)
+  except YamlConstructionError:
+    echoErr "Invalid YAML provided. Is this definitely a modpack?"
+    return 
+  except IOError:
+    echoErr "Failed reading from file. Does it exist?"
+    return
+
+  # ensure it's installed, and if not, install it
+  let fullName = getCurrentDir() & "/modpacks/" & modpack.meta.name
+  if not fullName.existsDir():
+    if not doInstall(modpackName):
+      echoErr "Failed to install modpack."
+      return
+
+  # build the command line
+  let executable = getFactorioBinary()
+  let commandLine = @[executable, "--mod-directory", fullName].join(" ")
+  output "Launching Factorio... (" & commandLine & ")"
+  let errorCode = execCmd(commandLine)
+
+  output "Factorio process exited with error code " & $errorCode
+
 
 # Command-line handling
 initFmm()
@@ -282,7 +343,8 @@ Usage: fmm [command] <options>
 Commands:
   login         Logins into the mod portal. Required to download mods.
   install       Installs a modpack.
-  uninstall     Uninstalls a modpack."""
+  launch        Launches a modpack.
+  """
 
 commandline:
   subcommand install, "install", "i":
@@ -290,14 +352,17 @@ commandline:
 
   subcommand login, "login", "l": discard
 
-  subcommand link, "link", "l": discard
+  subcommand launch, "launch", "la":
+    argument lModpack, string
 
   exitoption "help", "h", helpText
   errormsg helpText
 
 if install:
-  doInstall(iModpack)
+  discard doInstall(iModpack)
 elif login:
   discard doLogin()
+elif launch:
+  doLaunch(lModpack)
 else:
   echo "No command was selected. Use fmm --help for help."
