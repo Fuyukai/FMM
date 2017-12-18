@@ -1,0 +1,33 @@
+%YAML 1.2
+---
+
+# The meta section.
+# This gives some basic information about the modpack.
+meta:
+    # The name of the modpack.
+    name: Test modpack
+    # The author of the modpack.
+    author: Fukkaudeku
+    # The URL for the modpack. Optional.
+    url: https://github.com/SunDwarf/FMM
+    # The update URL for the modpack. Used to download a new modpack file.
+    # This is optional.
+    update_url: http://test.com/test.yaml
+    # The version for the modpack. Compared against when updating.
+    version: 0.1.0
+
+# Factorio settings and requirements. This entire block is optional.
+factorio:
+    # The minor version required. Optional.
+    version: 0.16
+    # A server IP:port to connect to when launching this modpack.
+    # This is optional. If ommitted, the client will launch normally.
+    server: factorio.test.com
+
+# The mods section. This defines what mods are to be included.
+# Each mod entry has a name, and an optional version.
+# Required dependencies for each mod are not automatically resolved - they must be listed here.
+# If the version is not found, the latest version will be used.
+mods:
+    - name: Squeak Through
+      version: 1.1.8

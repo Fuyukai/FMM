@@ -12,7 +12,10 @@ binDir = "bin"
 # We use the `fmm` file as our main binary entry point
 # And skip the `nim` files since we're not a library.
 # TODO: Figure out how to switch based on target OS
-bin = @["fmm"]
+when system.hostOS == "windows":
+    bin = @["fmm"]
+else:
+    bin = @["fmm"]
 
 skipExt = @["nim"]
 

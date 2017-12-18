@@ -271,7 +271,7 @@ proc doInstall(modpackName: string): bool =
       return false
 
     let facVer = selectedRelease["factorio_version"].getStr()
-    if facVer != modpack.factorio.version:
+    if not modpack.factorio.version.isNil and facVer != modpack.factorio.version:
       echoErr "This mod is for ", facVer, ", not ", modpack.factorio.version
       return false
 

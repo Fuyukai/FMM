@@ -1,10 +1,6 @@
 nimcache/
 bin/
 
-# modpack files
-*.yml
-*.yaml
-
 # setting files
 settings.json
 
