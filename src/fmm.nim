@@ -274,7 +274,7 @@ proc doInstall(modpackName: string): bool =
     else:
       createSymlink(filepath.expandFilename(), modpackDir & "/" & filename)
 
-    outputCyan "Installed mod " & fMod.name
+    outputCyan "Installed mod " & fMod.name & "\n"
 
   output "Installed modpack!"
   return true
