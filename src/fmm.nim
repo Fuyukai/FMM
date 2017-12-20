@@ -1,5 +1,5 @@
 ## The FMM utility.
-import os, osproc, strutils, json, httpclient, streams, tables, cgi, rdstdin
+import os, osproc, strutils, json, httpclient, streams, tables, cgi, rdstdin, terminal
 import commandeer
 import yaml
 import progress
@@ -76,10 +76,27 @@ template getFactorioDir(): string =
 
 # utility methods
 template echoErr(args: varargs[string, `$`]) =
-  stderr.writeLine "[!] Error: " & args.join("")
+  stderr.styledWriteLine fgRed, "[!] Error: " & args.join(""), resetStyle
 
+# coloured outputs
+template outputPink(args: varargs[string, `$`]) =
+  stdout.styledWriteLine fgMagenta, "[!] ", args.join(""), resetStyle
+
+template outputBlue(args: varargs[string, `$`]) =
+  stdout.styledWriteLine fgBlue, "[!] ", args.join(""), resetStyle
+
+template outputGreen(args: varargs[string, `$`]) =
+  stdout.styledWriteLine fgGreen, "[!] ", args.join(""), resetStyle
+
+template outputCyan(args: varargs[string, `$`]) =
+  stdout.styledWriteLine fgCyan, "[!] ", args.join(""), resetStyle
+
+template outputRed(args: varargs[string, `$`]) =
+  stdout.styledWriteLine fgRed, "[!] ", args.join(""), resetStyle
+
+# compat
 template output(args: varargs[string, `$`]) =
-  stdout.writeLine "[!] " & args.join("")
+  outputPink args
 
 # Gets the factorio binary.
 proc getFactorioBinary(): string =
@@ -155,10 +172,10 @@ proc doInstall(modpackName: string): bool =
   let settings = openJson(getFactorioDir() & "/player-data.json")
 
   if modpackName.len <= 0:
-    output "Must pass a modpack URL or file path."
+    echoErr "Must pass a modpack URL or file path."
     return false
   
-  output "Installing modpack from " & modpackName & "..."
+  outputBlue "Installing modpack from " & modpackName & "..."
 
   # load it from YAML
   var modpack: Modpack
@@ -171,7 +188,7 @@ proc doInstall(modpackName: string): bool =
     echoErr "Failed reading from file. Does it exist?"
     return false
 
-  output "Installing '", modpack.meta.name, "' by '", modpack.meta.author, "'"
+  outputBlue "Installing '", modpack.meta.name, "' by '", modpack.meta.author, "'"
   let modpackDir = "modpacks/" & modpack.meta.name.toLowerAscii()
 
   if modpackDir.existsDir():
@@ -180,7 +197,7 @@ proc doInstall(modpackName: string): bool =
   createDir(modpackDir)
 
   # Enter the download loop.
-  output "Downloading mods..."
+  outputBlue "Downloading mods..."
   for fMod in modpack.mods:
     var constructed = ""
     if fMod.version == nil:
@@ -188,7 +205,7 @@ proc doInstall(modpackName: string): bool =
     else:
       constructed = fMod.name & " (" & fMod.version & ")"
 
-    output "Downloading info on '", constructed, "'"
+    outputCyan "Downloading info on '", constructed, "'"
     let encodedUrl = encodeUrl(fmod.name).replace("+", "%20")
     var modData: JsonNode = downloadJSON(MODS_URL & "/" & encodedUrl)
 
@@ -239,25 +256,25 @@ proc doInstall(modpackName: string): bool =
     let filename = downloadURL.split("/")[^1].decodeUrl()
     let filepath = "downloads/" & filename
     if filepath.existsFile():
-      output "Skipping downloading mod " & filename & ", mod already downloaded"
+      outputGreen "Skipping downloading mod " & filename & ", mod already downloaded"
     else:
       # copy data onto the download url
       downloadUrl = downloadUrl & "?username=" & settings["service-username"].getStr().encodeUrl()
       downloadUrl = downloadUrl & "&token=" & settings["service-token"].getStr().encodeUrl()
 
-      output "Downloading ", downloadUrl, " to '", filepath, "'"
+      outputPink "Downloading ", filename, " to '", filepath, "'"
       client.downloadFile(downloadUrl, filepath)
-      output "Downloaded ", filename, " successfully."
+      outputGreen "Downloaded ", filename, " successfully."
 
     # Symlink mods into the appropriate folder
-    output "Linking into modpack folder..."
+    outputCyan "Linking into modpack folder..."
 
     when system.hostOS == "windows":
       createHardlink(filepath.expandFilename(), modpackDir & "/" & filename)
     else:
       createSymlink(filepath.expandFilename(), modpackDir & "/" & filename)
 
-    output "Installed mod " & fMod.name
+    outputCyan "Installed mod " & fMod.name
 
   output "Installed modpack!"
   return true
