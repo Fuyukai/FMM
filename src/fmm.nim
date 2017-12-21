@@ -8,9 +8,9 @@ const
   BASE_URL = "https://mods.factorio.com"
   API_URL = BASE_URL & "/api"
   MODS_URL = API_URL & "/mods"
-  USER_AGENT = "FactorioModpackManager 0.1.0/Nim " & NimVersion
 
-  FMM_VERSION = "0.1.1"
+  FMM_VERSION = "0.1.2"
+  USER_AGENT = "FMM (https://github.com/SunDwarf/FMM, " & FMM_VERSION & ") Nim " & NimVersion
 
 let client: HttpClient = USER_AGENT.newHttpClient()
 ## Note: login flow for downloading mods
@@ -363,7 +363,7 @@ if install:
 elif launch:
   doLaunch(lModpack)
 elif version:
-  echo "FMM (Factorio Modpack Manager) v" & FMM_VERSION
+  echo "FMM (Factorio Modpack Manager) v" & FMM_VERSION & " (Built with: Nim " & NimVersion & ")"
   echo "Copyright (C) 2017 Laura F. Dickinson."
   echo "This program is licenced under the MIT licence. This program comes with NO WARRANTY."
   echo ""
