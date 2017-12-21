@@ -8,7 +8,7 @@ build:
 
 # cross-compile
 build_win64:
-	nimble build --os:windows --cpu:am32 --gcc.exe:x86_64-w64-mingw32-gcc --gcc.linkerexe:x86_64-w64-mingw32-gcc
+	nimble build --os:windows --cpu:amd64 --gcc.exe:x86_64-w64-mingw32-gcc --gcc.linkerexe:x86_64-w64-mingw32-gcc
 	mv bin/fmm bin/fmm_x64.exe
 
 build_win32:
