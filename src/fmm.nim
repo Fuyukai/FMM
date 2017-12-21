@@ -10,6 +10,8 @@ const
   MODS_URL = API_URL & "/mods"
   USER_AGENT = "FactorioModpackManager 0.1.0/Nim " & NimVersion
 
+  FMM_VERSION = "0.1.1"
+
 let client: HttpClient = USER_AGENT.newHttpClient()
 ## Note: login flow for downloading mods
 ## 1) POST https://auth.factorio.com/api-login?api_version=2 with username, password, steamid, and require_game_ownership=true
@@ -341,6 +343,7 @@ Usage: fmm [command] <options>
 Commands:
   install       Installs a modpack.
   launch        Launches a modpack.
+  version       Shows version information.
   """
 
 commandline:
@@ -349,6 +352,9 @@ commandline:
 
   subcommand launch, "launch", "la":
     argument lModpack, string
+  
+  subcommand version, "version", "v":
+    discard
 
   exitoption "help", "h", helpText
   errormsg helpText
@@ -357,5 +363,11 @@ if install:
   discard doInstall(iModpack)
 elif launch:
   doLaunch(lModpack)
+elif version:
+  echo "FMM (Factorio Modpack Manager) v" & FMM_VERSION
+  echo "Copyright (C) 2017 Laura F. Dickinson."
+  echo "This program is licenced under the MIT licence. This program comes with NO WARRANTY."
+  echo ""
+  echo "Factorio is a registered trademark of Wube Software, Ltd."
 else:
   echo "No command was selected. Use fmm --help for help."
