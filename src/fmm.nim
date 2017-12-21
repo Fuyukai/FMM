@@ -321,15 +321,14 @@ proc doLaunch(modpackName: string) =
     echoErr "Cannot launch Factorio."
     return
 
-  var commandLineArgs = @[executable, "--mod-directory", fullName]
+  var commandLineArgs = @["--mod-directory", fullName]
   if not modpack.factorio.server.isNil:
     commandLineArgs.add("--mp-connect")
     commandLineArgs.add(modpack.factorio.server)
 
-  let commandLine = commandLineArgs.join(" ")
-
-  output "Launching Factorio... (" & commandLine & ")"
-  let errorCode = execCmd(commandLine)
+  output "Launching Factorio... (" & executable & " " & commandLineArgs.join(" ") & ")"
+  let process = startProcess(executable, args=commandLineArgs, options={poParentStreams})
+  let errorCode = waitForExit(process)
 
   output "Factorio process exited with error code " & $errorCode
 
