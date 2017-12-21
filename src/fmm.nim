@@ -108,8 +108,22 @@ proc getFactorioBinary(): string =
     echoErr "Log file is incomplete!"
     return nil
 
-  # example of line 2: 0.037 Program arguments: "/media/storage/eyes/.local/share/Steam/steamapps/common/Factorio/bin/x64/factorio" 
-  return lines[2].split('"')[1].split(" ")[0].strip(chars={'"'})
+  # example of line 5: 0.037 Binaries path: /media/storage/eyes/.local/share/Steam/steamapps/common/Factorio/bin 
+  let argumentLine = lines[5]
+  let binPath = argumentLine.split("Binaries path: ")[1]
+  
+  var arch: string
+  when hostCPU == "i386":
+    arch = "x86"
+  elif hostCPU == "amd64":
+    arch = "x64"
+  else:
+    # fuck it
+    arch = "x86"
+
+  let path = binPath / arch / "factorio"
+
+  return path
 
 
 ## Initializes FMM, creating directories and data files.
