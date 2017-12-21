@@ -102,7 +102,7 @@ template output(args: varargs[string, `$`]) =
 proc getFactorioBinary(): string =
   let fName = getFactorioDir() & "/factorio-current.log"
   let stream = newFileStream(fName, fmRead)
-  let lines = stream.readAll().split("\n")
+  let lines = stream.readAll().splitLines()
 
   if lines.len < 5:
     echoErr "Log file is incomplete!"
@@ -301,6 +301,10 @@ proc doLaunch(modpackName: string) =
 
   # build the command line
   let executable = getFactorioBinary()
+  if executable.isNil:
+    echoErr "Cannot launch Factorio."
+    return
+
   var commandLineArgs = @[executable, "--mod-directory", fullName]
   if not modpack.factorio.server.isNil:
     commandLineArgs.add("--mp-connect")

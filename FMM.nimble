@@ -13,7 +13,7 @@ binDir = "bin"
 # And skip the `nim` files since we're not a library.
 # TODO: Figure out how to switch based on target OS
 when system.hostOS == "windows":
-    bin = @["fmm"]
+    bin = @["fmm.exe"]
 else:
     bin = @["fmm"]
 
