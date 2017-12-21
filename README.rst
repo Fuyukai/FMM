@@ -53,10 +53,16 @@ FAQ
 ---
 
 **Q:** I get a ``ProtocolError`` when downloading, what do I do?  
-**A:** Just re-run the command. This means the mod portal server kicked you off.
+**A:** Just re-run the command. This means the mod portal server kicked you off.  
 
-**Q:** How do I uninstall a modpack?
-**A:** Delete it's directory in ``modpacks``.
+**Q:** How do I uninstall a modpack?  
+**A:** Delete it's directory in ``modpacks``.  
+
+**Q:** I got ``could not load: x.dll`` when running on Windows.  
+**A:** Grab the dll from https://nim-lang.org/download/dlls.zip and drop it in the same folder.  
+
+**Q:** ``fmm launch`` doesn't do anything / it spawns a steam modal.  
+**A:** If the steam modal isn't visible, you probably need to click steam. Just click OK.  
 
 Writing Modpack YAMLs
 ---------------------

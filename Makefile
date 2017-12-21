@@ -12,7 +12,7 @@ build_win64:
 	mv bin/fmm bin/fmm_x64.exe
 
 build_win32:
-	nimble build --os:windows --cpu:i386 --gcc.exe:i686-w64-mingw32-gcc -gcc.linkerexe:i686-w64-mingw32-gcc
+	nimble build --os:windows --cpu:i386 --gcc.exe:i686-w64-mingw32-gcc --gcc.linkerexe:i686-w64-mingw32-gcc
 	mv bin/fmm bin/fmm_x86.exe
 
 clean:
