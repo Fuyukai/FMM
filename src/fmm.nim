@@ -100,7 +100,7 @@ template output(args: varargs[string, `$`]) =
 
 # Gets the factorio binary.
 proc getFactorioBinary(): string =
-  let fName = getFactorioDir() & "/factorio-current.log"
+  let fName = getFactorioDir() / "factorio-current.log"
   let stream = newFileStream(fName, fmRead)
   let lines = stream.readAll().splitLines()
 
@@ -109,7 +109,7 @@ proc getFactorioBinary(): string =
     return nil
 
   # example of line 2: 0.037 Program arguments: "/media/storage/eyes/.local/share/Steam/steamapps/common/Factorio/bin/x64/factorio" 
-  return lines[2].split(":")[1].substr(1).split(" ")[0]
+  return lines[2].split('"')[1].split(" ")[0].strip(chars={'"'})
 
 
 ## Initializes FMM, creating directories and data files.
@@ -254,7 +254,7 @@ proc doInstall(modpackName: string): bool =
     # define some variables 
     var downloadUrl = BASE_URL & selectedRelease["download_url"].getStr()
     let filename = downloadURL.split("/")[^1].decodeUrl()
-    let filepath = "downloads/" & filename
+    let filepath = "downloads" / filename
     if filepath.existsFile():
       outputGreen "Skipping downloading mod " & filename & ", mod already downloaded"
     else:
@@ -270,9 +270,9 @@ proc doInstall(modpackName: string): bool =
     outputCyan "Linking into modpack folder..."
 
     when system.hostOS == "windows":
-      createHardlink(filepath.expandFilename(), modpackDir & "/" & filename)
+      createHardlink(filepath.expandFilename(), modpackDir / filename)
     else:
-      createSymlink(filepath.expandFilename(), modpackDir & "/" & filename)
+      createSymlink(filepath.expandFilename(), modpackDir / filename)
 
     outputCyan "Installed mod " & fMod.name & "\n"
 
@@ -293,7 +293,7 @@ proc doLaunch(modpackName: string) =
     return
 
   # ensure it's installed, and if not, install it
-  let fullName = getCurrentDir() & "/modpacks/" & modpack.meta.name
+  let fullName = getCurrentDir() / "modpacks" / modpack.meta.name
   if not fullName.existsDir():
     if not doInstall(modpackName):
       echoErr "Failed to install modpack."
