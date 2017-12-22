@@ -2,7 +2,7 @@
 import os, osproc, strutils, json, httpclient, streams, tables, cgi, rdstdin, terminal
 import commandeer
 import yaml
-import progress
+import zip/zipfiles
 
 const
   BASE_URL = "https://mods.factorio.com"
@@ -332,6 +332,42 @@ proc doLaunch(modpackName: string) =
 
   output "Factorio process exited with error code " & $errorCode
 
+## Creates a list of mods out of a directory.
+proc doLock(location: string = nil) =
+  if not location.existsDir():
+    echoErr "This directory does not exist."
+    return
+  else:
+    outputPink "Locking from location " & location
+
+  # make list of mods
+  type modType = tuple[name: string, version: string]
+  var mods = newSeq[modType]()
+
+  for kind, file in walkDir(location):
+    if not file.endsWith(".zip"):
+      continue
+
+    let dName = file.splitPath()[1].split(".zip")[0]
+
+    # open the archive for reading
+    var archive: ZipArchive
+    discard archive.open(file)
+
+    # read info.json into our file
+    let stream = newStringStream(newString(65535))
+    archive.extractFile(dName / "info.json", stream)
+    stream.setPosition(0)
+    let jsonData = stream.readAll()
+
+    let node = parseJson(jsonData)
+    let modInfo: modType = (name: $node["name"], version: $node["version"])
+    mods.add(modInfo)
+
+  outputPink "Mod output:\n"
+  echo "mods:"
+  for iMod in mods:
+    echo "    - name: " & iMod.name & "\n      version: " & iMod.version
 
 # Command-line handling
 initFmm()
@@ -342,8 +378,8 @@ Usage: fmm [command] <options>
 Commands:
   install       Installs a modpack.
   launch        Launches a modpack.
-  version       Shows version information.
-  """
+  lock          Makes a list of mods from a directory.
+  version       Shows version information."""
 
 commandline:
   subcommand install, "install", "i":
@@ -355,6 +391,9 @@ commandline:
   subcommand version, "version", "v":
     discard
 
+  subcommand lock, "lock", "lo":
+    arguments loDirectory, string, false
+
   exitoption "help", "h", helpText
   errormsg helpText
 
@@ -362,6 +401,15 @@ if install:
   discard doInstall(iModpack)
 elif launch:
   doLaunch(lModpack)
+elif lock:
+  var directory: string
+  if loDirectory.len <= 0:
+    directory = getFactorioDir() / "mods"
+  else:
+    directory = loDirectory[0]
+  
+  doLock(directory)
+
 elif version:
   echo "FMM (Factorio Modpack Manager) v" & FMM_VERSION & " (Built with: Nim " & NimVersion & ")"
   echo "Copyright (C) 2017 Laura F. Dickinson."

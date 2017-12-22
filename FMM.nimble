@@ -21,7 +21,6 @@ skipExt = @["nim"]
 
 # Dependencies
 requires "nim >= 0.17.2"
-requires "commandeer >= 0.12.0"
+requires "commandeer >= 0.12.1"
 requires "zip#head"
 requires "yaml >= 0.10.3"
-requires "progress"
