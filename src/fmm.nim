@@ -364,6 +364,10 @@ proc doLock(location: string = nil) =
     let modInfo: modType = (name: $node["name"], version: $node["version"])
     mods.add(modInfo)
 
+  if mods.len <= 0:
+    echoErr "Could not find any mods."
+    return
+
   outputPink "Mod output:\n"
   echo "mods:"
   for iMod in mods:
