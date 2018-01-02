@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.1.4
+-----
+
+ - Parse the Factorio bittiness from the log file. This prevents issues with x86 builds running on 
+   x64.
+
 0.1.3
 -----
 
