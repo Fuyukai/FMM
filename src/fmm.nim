@@ -9,7 +9,7 @@ const
   API_URL = BASE_URL & "/api"
   MODS_URL = API_URL & "/mods"
 
-  FMM_VERSION = "0.1.2"
+  FMM_VERSION = "0.1.3"
   USER_AGENT = "FMM (https://github.com/SunDwarf/FMM, " & FMM_VERSION & ") Nim " & NimVersion
 
 let client: HttpClient = USER_AGENT.newHttpClient()
@@ -124,7 +124,6 @@ proc getFactorioBinary(): string =
     arch = "x86"
 
   let path = binPath / arch / "factorio"
-
   return path
 
 
@@ -181,6 +180,17 @@ proc loadModpackFromYAML(name: string): Modpack =
 
   return modpack
 
+## Makes a lock JSON.
+proc makeLock(modpack: Modpack) =
+  let modpackDir = "modpacks/" & modpack.meta.name.toLowerAscii()
+
+  # simple lock format just gives us the version
+  let lock = %*{"version": modpack.meta.version}
+  let stream = (modpackDir / "fmm_lock.json").newFileStream(fmWrite)
+  stream.write($lock)
+  stream.close()
+
+
 # Commands logic
 
 ## Does a modpack installation.
@@ -191,7 +201,7 @@ proc doInstall(modpackName: string): bool =
     echoErr "Must pass a modpack URL or file path."
     return false
   
-  outputBlue "Installing modpack from " & modpackName & "..."
+  outputCyan "Installing modpack from " & modpackName & "..."
 
   # load it from YAML
   var modpack: Modpack
@@ -213,7 +223,7 @@ proc doInstall(modpackName: string): bool =
   createDir(modpackDir)
 
   # Enter the download loop.
-  outputBlue "Downloading mods..."
+  outputBlue "Downloading mods...\n"
   for fMod in modpack.mods:
     var constructed = ""
     if fMod.version == nil:
@@ -292,6 +302,10 @@ proc doInstall(modpackName: string): bool =
 
     outputCyan "Installed mod " & fMod.name & "\n"
 
+  # output a fmm_lock.json
+  outputPink "Locking modpack version at " & modpack.meta.version & "..."
+  makeLock modpack
+
   output "Installed modpack!"
   return true
     
@@ -310,10 +324,26 @@ proc doLaunch(modpackName: string) =
 
   # ensure it's installed, and if not, install it
   let fullName = getCurrentDir() / "modpacks" / modpack.meta.name
-  if not fullName.existsDir():
+  let dirExists = fullname.existsDir()
+  let lockLocation = (fullname / "fmm_lock.json")
+  let lockExists = lockLocation.existsFile()
+
+  if not dirExists or not lockExists:
+    outputBlue "Modpack is not installed, installing automatically..."
     if not doInstall(modpackName):
       echoErr "Failed to install modpack."
       return
+  else:
+    # check version
+    let lock = (fullname / "fmm_lock.json").openJson()
+    if lock["version"].getStr != modpack.meta.version:
+      outputRed "Installed version is " & lock["version"].getStr & ", latest version is " & modpack.meta.version
+      outputPink "Updating modpack...\n"
+      if not doInstall(modpackName):
+        echoErr "Failed to install modpack."
+        return
+
+  outputPink "Modpack is up-to-date, version " & modpack.meta.version
 
   # build the command line
   let executable = getFactorioBinary()
@@ -326,11 +356,11 @@ proc doLaunch(modpackName: string) =
     commandLineArgs.add("--mp-connect")
     commandLineArgs.add(modpack.factorio.server)
 
-  output "Launching Factorio... (" & executable & " " & commandLineArgs.join(" ") & ")"
+  outputPink "Launching Factorio... (" & executable & " " & commandLineArgs.join(" ") & ")"
   let process = startProcess(executable, args=commandLineArgs, options={poParentStreams})
   let errorCode = waitForExit(process)
 
-  output "Factorio process exited with error code " & $errorCode
+  outputPink "Factorio process exited with error code " & $errorCode
 
 ## Creates a list of mods out of a directory.
 proc doLock(location: string = nil) =
