@@ -1,5 +1,5 @@
 ## The FMM utility.
-import os, osproc, strutils, json, httpclient, streams, tables, cgi, rdstdin, terminal
+import os, osproc, strutils, json, httpclient, streams, tables, cgi, rdstdin, terminal, re
 import commandeer
 import yaml
 import zip/zipfiles
@@ -9,8 +9,8 @@ const
   API_URL = BASE_URL & "/api"
   MODS_URL = API_URL & "/mods"
 
-  FMM_VERSION = "0.1.3"
-  USER_AGENT = "FMM (https://github.com/SunDwarf/FMM, " & FMM_VERSION & ") Nim " & NimVersion
+  FMM_VERSION = "0.1.4"
+  USER_AGENT = "FMM (https://github.com/SunDwarf/FMM, " & FMM_VERSION & ") Nim " & NimVersion 
 
 let client: HttpClient = USER_AGENT.newHttpClient()
 ## Note: login flow for downloading mods
@@ -114,16 +114,11 @@ proc getFactorioBinary(): string =
   let argumentLine = lines[5]
   let binPath = argumentLine.split("Binaries path: ")[1]
   
-  var arch: string
-  when hostCPU == "i386":
-    arch = "x86"
-  elif hostCPU == "amd64":
-    arch = "x64"
-  else:
-    # fuck it
-    arch = "x86"
+  let buildLine = lines[0]
+  let sp = buildLine.split("(build ")[1].split(",")[1]
+  let found = "x" & sp[^2..^0]
 
-  let path = binPath / arch / "factorio"
+  let path = binPath / found / "factorio"
   return path
 
 
@@ -449,6 +444,9 @@ elif version:
   echo "Copyright (C) 2017 Laura F. Dickinson."
   echo "This program is licenced under the MIT licence. This program comes with NO WARRANTY."
   echo ""
+  let factorio = getFactorioBinary()
+  if not factorio.isNil:
+    echo "Using Factorio at " & factorio
   echo "Factorio is a registered trademark of Wube Software, Ltd."
 else:
   echo "No command was selected. Use fmm --help for help."
