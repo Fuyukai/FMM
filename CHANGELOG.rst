@@ -1,6 +1,16 @@
 Changelog
 =========
 
+0.2.0
+-----
+
+ - Add auto-updating from an update URL saved in your modpack folder.
+
+ - Copy the modpack YAML into the modpack folder.
+
+ - Allow launching a modpack from a folder, without using the YAML.
+
+
 0.1.4
 -----
 

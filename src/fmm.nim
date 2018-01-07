@@ -9,7 +9,7 @@ const
   API_URL = BASE_URL & "/api"
   MODS_URL = API_URL & "/mods"
 
-  FMM_VERSION = "0.1.4"
+  FMM_VERSION = "0.2.0"
   USER_AGENT = "FMM (https://github.com/SunDwarf/FMM, " & FMM_VERSION & ") Nim " & NimVersion 
 
 let client: HttpClient = USER_AGENT.newHttpClient()
@@ -162,6 +162,7 @@ proc openJson(location: string): JsonNode =
 ## Gets the modpack object from the modpack's YAML.
 proc loadModpackFromYAML(name: string): Modpack =
   var modpackYAML: string
+  output "Loading modpack data from ", name
   if name.startsWith("http://") or name.startsWith("https://"):
     modpackYAML = downloadData(name)
   else:
@@ -175,12 +176,35 @@ proc loadModpackFromYAML(name: string): Modpack =
 
   return modpack
 
+## Loads a modpack, either from the modpack YAML or the update URL in the folder.
+proc loadModpack(name: string): Modpack =
+  # check if it exists as a file, or as a URL
+  if name.existsFile() or name.startsWith("https://") or name.startsWith("http://"):
+    return loadModpackFromYAML(name)
+
+  # check if the lock file exists
+  if ("modpacks" / name).existsDir():
+    let lock = openJson("modpacks" / name / "fmm_lock.json")
+    var path = lock["url"].getStr()
+
+    if path.isNil or path == "":
+      let finalPath = ("modpacks" / name / "modpack.yaml")
+      if not finalPath.existsFile():
+        echoErr "Modpack does not have an update URL or a modpack.yaml saved. Cannot launch!"
+        return
+
+      path = finalPath
+
+    return loadModpackFromYAML(path)
+
+  raise newException(IOError, "Could not find modpack")
+
 ## Makes a lock JSON.
 proc makeLock(modpack: Modpack) =
   let modpackDir = "modpacks/" & modpack.meta.name.toLowerAscii()
 
   # simple lock format just gives us the version
-  let lock = %*{"version": modpack.meta.version}
+  let lock = %*{"version": modpack.meta.version, "url": modpack.meta.update_url}
   let stream = (modpackDir / "fmm_lock.json").newFileStream(fmWrite)
   stream.write($lock)
   stream.close()
@@ -201,6 +225,8 @@ proc doInstall(modpackName: string): bool =
   # load it from YAML
   var modpack: Modpack
   try:
+    # NB: We use loadModpackFromYAML because we don't want to install a modpack that already exists
+    # if the user specifies one with the same name.
     modpack = loadModpackFromYAML(modpackName)
   except YamlConstructionError:
     echoErr "Invalid YAML provided. Is this definitely a modpack?"
@@ -210,7 +236,7 @@ proc doInstall(modpackName: string): bool =
     return false
 
   outputBlue "Installing '", modpack.meta.name, "' by '", modpack.meta.author, "'"
-  let modpackDir = "modpacks/" & modpack.meta.name.toLowerAscii()
+  let modpackDir = "modpacks" / modpack.meta.name.toLowerAscii()
 
   if modpackDir.existsDir():
     modpackDir.removeDir()
@@ -301,6 +327,11 @@ proc doInstall(modpackName: string): bool =
   outputPink "Locking modpack version at " & modpack.meta.version & "..."
   makeLock modpack
 
+  # copy the modpack.yaml to the directory
+  let s = newFileStream(modpackDir / "modpack.yaml", fmWrite)
+  dump(modpack, s)
+  s.close()
+
   output "Installed modpack!"
   return true
     
@@ -309,12 +340,18 @@ proc doLaunch(modpackName: string) =
   # load it from YAML
   var modpack: Modpack
   try:
-    modpack = loadModpackFromYAML(modpackName)
+    modpack = loadModpack(modpackName)
   except YamlConstructionError:
     echoErr "Invalid YAML provided. Is this definitely a modpack?"
     return 
   except IOError:
+    let e = getCurrentExceptionMsg()
     echoErr "Failed reading from file. Does it exist?"
+    echoErr "Error raised: ", e
+    return
+  
+  if modpack.meta.name.isNil:
+    echoErr "Cannot launch an empty modpack."
     return
 
   # ensure it's installed, and if not, install it
@@ -331,6 +368,7 @@ proc doLaunch(modpackName: string) =
   else:
     # check version
     let lock = (fullname / "fmm_lock.json").openJson()
+
     if lock["version"].getStr != modpack.meta.version:
       outputRed "Installed version is " & lock["version"].getStr & ", latest version is " & modpack.meta.version
       outputPink "Updating modpack...\n"
@@ -405,10 +443,10 @@ const helpText = """
 Usage: fmm [command] <options>
 
 Commands:
-  install       Installs a modpack.
-  launch        Launches a modpack.
-  lock          Makes a list of mods from a directory.
-  version       Shows version information."""
+  install (i)   Installs a modpack.
+  launch (la)   Launches a modpack.
+  lock (lo)     Makes a list of mods from a directory.
+  version (v)   Shows version information."""
 
 commandline:
   subcommand install, "install", "i":
