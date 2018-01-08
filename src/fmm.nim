@@ -212,29 +212,8 @@ proc makeLock(modpack: Modpack) =
 
 # Commands logic
 
-## Does a modpack installation.
-proc doInstall(modpackName: string): bool =
+proc doInstall(modpack: Modpack): bool =
   let settings = openJson(getFactorioDir() & "/player-data.json")
-
-  if modpackName.len <= 0:
-    echoErr "Must pass a modpack URL or file path."
-    return false
-  
-  outputCyan "Installing modpack from " & modpackName & "..."
-
-  # load it from YAML
-  var modpack: Modpack
-  try:
-    # NB: We use loadModpackFromYAML because we don't want to install a modpack that already exists
-    # if the user specifies one with the same name.
-    modpack = loadModpackFromYAML(modpackName)
-  except YamlConstructionError:
-    echoErr "Invalid YAML provided. Is this definitely a modpack?"
-    return false
-  except IOError:
-    echoErr "Failed reading from file. Does it exist?"
-    return false
-
   outputBlue "Installing '", modpack.meta.name, "' by '", modpack.meta.author, "'"
   let modpackDir = "modpacks" / modpack.meta.name.toLowerAscii()
 
@@ -334,6 +313,29 @@ proc doInstall(modpackName: string): bool =
 
   output "Installed modpack!"
   return true
+
+## Does a modpack installation.
+proc doInstallFromName(modpackName: string): bool =
+  if modpackName.len <= 0:
+    echoErr "Must pass a modpack URL or file path."
+    return false
+  
+  outputCyan "Installing modpack from " & modpackName & "..."
+
+  # load it from YAML
+  var modpack: Modpack
+  try:
+    # NB: We use loadModpackFromYAML because we don't want to install a modpack that already exists
+    # if the user specifies one with the same name.
+    modpack = loadModpackFromYAML(modpackName)
+  except YamlConstructionError:
+    echoErr "Invalid YAML provided. Is this definitely a modpack?"
+    return false
+  except IOError:
+    echoErr "Failed reading from file. Does it exist?"
+    return false
+
+  return doInstall(modpack)
     
 ## Launches factorio with the specified modpack.
 proc doLaunch(modpackName: string) =
@@ -362,7 +364,7 @@ proc doLaunch(modpackName: string) =
 
   if not dirExists or not lockExists:
     outputBlue "Modpack is not installed, installing automatically..."
-    if not doInstall(modpackName):
+    if not doInstall(modpack):
       echoErr "Failed to install modpack."
       return
   else:
@@ -372,7 +374,7 @@ proc doLaunch(modpackName: string) =
     if lock["version"].getStr != modpack.meta.version:
       outputRed "Installed version is " & lock["version"].getStr & ", latest version is " & modpack.meta.version
       outputPink "Updating modpack...\n"
-      if not doInstall(modpackName):
+      if not doInstall(modpack):
         echoErr "Failed to install modpack."
         return
 
@@ -465,7 +467,7 @@ commandline:
   errormsg helpText
 
 if install:
-  discard doInstall(iModpack)
+  discard doInstallFromName(iModpack)
 elif launch:
   doLaunch(lModpack)
 elif lock:
