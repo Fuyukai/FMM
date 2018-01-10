@@ -1,5 +1,6 @@
 ## The FMM utility.
 import os, osproc, strutils, json, httpclient, streams, tables, cgi, rdstdin, terminal, re
+import algorithm
 import commandeer
 import yaml
 import zip/zipfiles
@@ -440,6 +441,8 @@ proc doLock(location: string = nil) =
   if mods.len <= 0:
     echoErr "Could not find any mods."
     return
+
+  mods.sort do (x, y: modType) -> int: cmp(x.name.toLower(), y.name.toLower())
 
   outputPink "Mod output:\n"
   echo "mods:"
