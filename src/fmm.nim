@@ -421,9 +421,17 @@ proc doLock(location: string = nil) =
 
     # read info.json into our file
     let stream = newStringStream(newString(65535))
-    archive.extractFile(dName / "info.json", stream)
-    stream.setPosition(0)
-    let jsonData = stream.readAll()
+    var jsonData: string = nil
+    for file in archive.walkFiles():
+      if file == dName / "info.json":
+        archive.extractFile(dName / "info.json", stream)
+        stream.setPosition(0)
+        jsonData = stream.readAll()
+        break
+
+    if jsonData.isNil:
+      outputRed "Invalid zip file ", file, " (missing ", dName / "info.json", ")"
+      continue
 
     let node = parseJson(jsonData)
     let modInfo: modType = (name: $node["name"], version: $node["version"])
