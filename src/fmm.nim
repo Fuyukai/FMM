@@ -252,7 +252,8 @@ proc doInstall(modpack: Modpack): bool =
 
             # ensure we don't accidentally select the wrong release
             if not modpack.factorio.version.isNil:
-              if modpack.factorio.version != release["factorio_version"].getStr():
+              let facVer = release["info_json"]["factorio_version"].getStr
+              if modpack.factorio.version != facVer:
                 continue
 
             selectedRelease = release
@@ -272,7 +273,7 @@ proc doInstall(modpack: Modpack): bool =
       echoErr "Could not find a matching release for ", fmod.name, " version ", version, " for this Factorio version"
       return false
 
-    let facVer = selectedRelease["factorio_version"].getStr()
+    let facVer = selectedRelease["info_json"]["factorio_version"].getStr()
     if not modpack.factorio.version.isNil and facVer != modpack.factorio.version:
       echoErr "This mod is for ", facVer, ", not ", modpack.factorio.version
       return false
@@ -280,7 +281,7 @@ proc doInstall(modpack: Modpack): bool =
     # time to do the download
     # define some variables 
     var downloadUrl = BASE_URL & selectedRelease["download_url"].getStr()
-    let filename = downloadURL.split("/")[^1].decodeUrl()
+    let filename = selectedRelease["file_name"].getStr  # 2018-01-17 thank devs :pray:
     let filepath = "downloads" / filename
     if filepath.existsFile():
       outputGreen "Skipping downloading mod " & filename & ", mod already downloaded"
@@ -466,7 +467,7 @@ commandline:
     argument iModpack, string
 
   subcommand launch, "launch", "la":
-    argument lModpack, string
+    arguments lModpack, string
   
   subcommand version, "version", "v":
     discard
@@ -480,7 +481,7 @@ commandline:
 if install:
   discard doInstallFromName(iModpack)
 elif launch:
-  doLaunch(lModpack)
+  doLaunch(lModpack.join(" "))
 elif lock:
   var directory: string
   if loDirectory.len <= 0:
