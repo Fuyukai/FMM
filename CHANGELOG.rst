@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.2.1
+-----
+
+ - Fix FMM for the latest API changes.
+
 0.2.0
 -----
 

@@ -8,3 +8,5 @@ modpacks/
 downloads/
 .vscode/
 fmm.zip
+
+./*.yml

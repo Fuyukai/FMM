@@ -10,7 +10,7 @@ const
   API_URL = BASE_URL & "/api"
   MODS_URL = API_URL & "/mods"
 
-  FMM_VERSION = "0.2.0"
+  FMM_VERSION = "0.2.1"
   USER_AGENT = "FMM (https://github.com/SunDwarf/FMM, " & FMM_VERSION & ") Nim " & NimVersion 
 
 let client: HttpClient = USER_AGENT.newHttpClient()
