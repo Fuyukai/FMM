@@ -6,7 +6,7 @@ import yaml
 
 ## Generic installation function, shared between client and server.
 proc doModpackInstall(modpack: Modpack): bool =
-  let modpackDir = "modpacks" / modpack.meta.name
+  let modpackDir = getModpackDirectory() / modpack.meta.name
 
   if modpackDir.existsDir():
     modpackDir.removeDir()
@@ -71,7 +71,7 @@ proc doModpackInstall(modpack: Modpack): bool =
     # define some variables 
     var downloadUrl = MODS_BASE_URL & selectedRelease["download_url"].getStr()
     let filename = selectedRelease["file_name"].getStr  # 2018-01-17 thank devs :pray:
-    let filepath = "downloads" / filename
+    let filepath = getDownloadsDirectory() / filename
     if filepath.existsFile():
       outputGreen "Skipping downloading mod " & filename & ", mod already downloaded"
     else:

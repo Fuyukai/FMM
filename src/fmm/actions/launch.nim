@@ -4,8 +4,12 @@ import ../modpack, ../util, ../termhelpers
 import ./install
 import yaml
 
-proc doLaunch*(arguments: seq[string]) =
+proc doLaunch*(arguments: seq[string], save: string = nil) =
   # load it from YAML
+  if config.server and save.isNil():
+    echoErr "Launching a server requires passing a save."
+    return
+
   let modpackName = arguments.join(" ")
   var modpack: Modpack
   try:
@@ -22,7 +26,7 @@ proc doLaunch*(arguments: seq[string]) =
 
   # check version
   var updated = false
-  if not modpack.meta.update_url.isNil():
+  if not modpack.meta.update_url.isNil() and not config.server:
     # auto-update if applicable
     var newModpack = loadModpackData(modpack.meta.update_url)
     if newModpack.meta.version > modpack.meta.version:
@@ -41,10 +45,15 @@ proc doLaunch*(arguments: seq[string]) =
     echoErr "Cannot launch Factorio."
     return
 
-  let qualifiedName = getCurrentDir() / "modpacks" / modpack.meta.name
+  let qualifiedName = getModpackDirectory() / modpack.meta.name
 
   var commandLineArgs = @["--mod-directory", qualifiedName]
-  if not config.server and not modpack.factorio.server.isNil:
+  if config.server:
+    commandLineArgs.add("--start-server")
+    commandLineArgs.add(save)
+    commandLineArgs.add("--server-settings")
+    commandLineArgs.add(config.location)
+  elif modpack.factorio.server.isNil:
     commandLineArgs.add("--mp-connect")
     commandLineArgs.add(modpack.factorio.server)
 

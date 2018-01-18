@@ -25,6 +25,21 @@ proc saveJson*(location: string, json: JsonNode) =
 
 ## config stuff
 
+type
+  FactorioConfig* = object
+    ## The location of the settings file.
+    location*: string
+    ## The directory to use.
+    directory: string
+    ## The Factorio username used.
+    username*: string
+    ## The Factorio token used.
+    token*: string
+    ## If this running server-side.
+    server*: bool
+
+var config* = FactorioConfig()
+
 ## Gets the Factorio directory on the client.
 template getFactorioDirClient*(): string =
   when system.hostOS == "windows":
@@ -40,21 +55,20 @@ template getFactorioDirClient*(): string =
     # panic
     $os.getAppDir()
 
-type
-  FactorioConfig* = object
-    ## The location of the settings file.
-    location*: string
-    ## The Factorio username used.
-    username*: string
-    ## The Factorio token used.
-    token*: string
-    ## If this running server-side.
-    server*: bool
+## Gets the factory directory on the server.
+template getFactorioDirServer*(): string = 
+  if config.directory.isNil():
+    getCurrentDir()
+  else:
+    config.directory
+
 
 ## Loads the current factorio config.
 ## This must be called first; this behaves differently on the server and on the client.
-proc loadConfig*(cfg: var FactorioConfig, location: string, server: bool = false) =
+proc loadConfig*(cfg: var FactorioConfig, location: string, server: bool = false, 
+                 directory: string = nil) =
   cfg.server = server
+  cfg.directory = directory
   let actualLocation = if location.isNil():
       if server:
         getCurrentDir() / "data" / "server-settings.json"
@@ -78,9 +92,6 @@ proc loadConfig*(cfg: var FactorioConfig, location: string, server: bool = false
     cfg.username = data["service-username"].getStr()
     cfg.token = data["service-token"].getStr()
 
-var config* = FactorioConfig()
-
-template getFactorioDirServer*(): string = getCurrentDir()
 
 # Gets the factorio binary.
 proc getFactorioBinary*(): string =
@@ -105,3 +116,8 @@ proc getFactorioBinary*(): string =
   let path = binPath / found / "factorio"
   return path
 
+## Gets the current modpack directory.
+template getModpackDirectory*(): string = config.directory / "modpacks"
+
+## Gets the current downloads directory.
+template getDownloadsDirectory*(): string = config.directory / "downloads"
