@@ -53,7 +53,7 @@ proc doLaunch*(arguments: seq[string], save: string = nil) =
     commandLineArgs.add(save)
     commandLineArgs.add("--server-settings")
     commandLineArgs.add(config.location)
-  elif modpack.factorio.server.isNil:
+  elif not modpack.factorio.server.isNil():
     commandLineArgs.add("--mp-connect")
     commandLineArgs.add(modpack.factorio.server)
 
