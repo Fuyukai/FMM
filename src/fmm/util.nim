@@ -82,9 +82,12 @@ var config* = FactorioConfig()
 
 template getFactorioDirServer*(): string = getCurrentDir()
 
-# Gets the factorio binary. Only useful on the client.
+# Gets the factorio binary.
 proc getFactorioBinary*(): string =
-  let fName = getFactorioDirClient() / "factorio-current.log"
+  let fName = if config.server:
+      getFactorioDirServer() / "factorio-current.log"
+    else:
+      getFactorioDirClient() / "factorio-current.log"
   let stream = newFileStream(fName, fmRead)
   let lines = stream.readAll().splitLines()
 

@@ -19,10 +19,6 @@ proc doLaunch*(arguments: seq[string]) =
     echoErr "Failed reading from file. Does it exist?"
     echoErr "Error raised: ", e
     return
-  
-  if modpack.meta.name.isNil:
-    echoErr "Cannot launch an empty modpack."
-    return
 
   # check version
   var updated = false
@@ -48,11 +44,15 @@ proc doLaunch*(arguments: seq[string]) =
   let qualifiedName = getCurrentDir() / "modpacks" / modpack.meta.name
 
   var commandLineArgs = @["--mod-directory", qualifiedName]
-  if not modpack.factorio.server.isNil:
+  if not config.server and not modpack.factorio.server.isNil:
     commandLineArgs.add("--mp-connect")
     commandLineArgs.add(modpack.factorio.server)
 
-  outputPink "Launching Factorio... (" & executable & " " & commandLineArgs.join(" ") & ")"
+  let statement = if config.server:
+      "Factorio server..."
+    else:
+      "Factorio client..."
+  outputPink "Launching " & statement & " (" & executable & " " & commandLineArgs.join(" ") & ")"
   let process = startProcess(executable, args=commandLineArgs, options={poParentStreams})
   let errorCode = waitForExit(process)
 
