@@ -68,3 +68,5 @@ Writing Modpack YAMLs
 ---------------------
 
 See ``examples/modpack.yaml`` for a full example 
+
+.. _Factorio: https://factorio.com

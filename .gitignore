@@ -9,4 +9,7 @@ downloads/
 .vscode/
 fmm.zip
 
-./*.yml
+*.yml
+factorio/
+*.tar.xz
+*.old

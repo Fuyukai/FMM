@@ -1,5 +1,5 @@
 # Package
-version       = "0.1.0"
+version       = "0.2.1"
 author        = "Laura F. D."
 description   = "Factorio Modpack Manager"
 license       = "MIT"
