@@ -3,8 +3,8 @@ import ./termhelpers
 
 ## Opens from a location.
 proc openData*(location: string): string =
-  if not location.existsFile:
-    raise newException(IOError, "File not found")
+  if not location.existsFile():
+    raise newException(IOError, "File not found: " & location)
 
   var stream = newFileStream(location, fmRead)
   result = stream.readAll()
