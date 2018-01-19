@@ -16,7 +16,7 @@ proc initFmm(location: string) =
 const helpText = """
 Usage: fmm [command] <options>
 
-Arguments:
+Global arguments:
     --server    Run FMM in server mode.
     --config    Specify the configuration file explicitly.
     --directory Specify the Factorio directory. Will use cwd for server, and the default for client.
@@ -24,6 +24,7 @@ Arguments:
 Commands:
   install (i)   Installs a modpack.
   launch (la)   Launches a modpack.
+    --save      Specify the save to use when launching on the server.
   lock (lo)     Makes a list of mods from a directory.
   version (v)   Shows version information."""
 
