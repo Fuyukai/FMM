@@ -1,6 +1,24 @@
 Changelog
 =========
 
+0.3.0
+-----
+
+ - The core of the code has been split out into separate files. This makes maintainability a lot 
+   easier.
+
+ - Added the ability to specify the config file FMM uses.
+
+ - Added the ability to specify the base directory. This will affect the location of the modpacks 
+   and downloads directory on the client.
+
+ - Added the ability to run FMM on a headless server. This will edit the server tags to ensure 
+   clients can install the modpack remotely.
+
+ - Removed launching from a YAML or from a URL.
+
+ - Added the ability to install a modpack directly from a server.
+
 0.2.1
 -----
 
