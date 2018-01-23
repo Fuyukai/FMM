@@ -48,6 +48,8 @@ proc doLaunch*(arguments: seq[string], save: string = nil) =
   let qualifiedName = getModpackDirectory() / modpack.meta.name
 
   var commandLineArgs = @["--mod-directory", qualifiedName]
+  commandLineArgs.add("--executable-path")
+  commandLineArgs.add(executable)
   if config.server:
     commandLineArgs.add("--start-server")
     commandLineArgs.add(save)

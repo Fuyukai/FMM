@@ -25,7 +25,7 @@ proc doModpackInstall(modpack: Modpack): bool =
     outputCyan "Downloading info on '", constructed, "'"
     let modData: JsonNode = getModInfo(fMod.name)
 
-    if modData.hasKey("message") and modData["detail"].getStr() == "Mod not found":
+    if modData.hasKey("message") and modData["message"].getStr() == "Mod not found":
       echoErr "Mod '", fMod.name, "' not found"
       return false
 

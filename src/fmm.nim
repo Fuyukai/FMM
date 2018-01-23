@@ -1,8 +1,8 @@
 ## FMM main file.
-import os
+import os, strutils
 import commandeer
 import fmm/termhelpers, fmm/version, fmm/util
-import fmm/actions/install, fmm/actions/launch
+import fmm/actions/install, fmm/actions/launch, fmm/actions/lock
 
 ## Initializes FMM, creating directories and data files.
 proc initFmm(location: string) =
@@ -77,6 +77,9 @@ elif cInstall:
 
 elif cLaunch:
   doLaunch(lModpack, save=lSave)
+
+elif cLock:
+  doLock(loDirectory.join(" "))
 
 else:
   echo "No command was selected. Use fmm --help for help."
