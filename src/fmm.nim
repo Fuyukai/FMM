@@ -61,7 +61,7 @@ if cVersion:
   echo "FMM (Factorio Modpack Manager) v" & FMM_VERSION & " (Built with: Nim " & NimVersion & ")"
   if server:
     echo "FMM running in server mode."
-  echo "Copyright (C) 2017 Laura F. Dickinson."
+  echo "Copyright (C) 2017-2018 Laura F. Dickinson."
   echo "This program is licenced under the GPLv3 licence. This program comes with NO WARRANTY."
   echo ""
   echo "Using config from " & config.location
